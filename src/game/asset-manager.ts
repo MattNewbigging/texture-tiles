@@ -7,7 +7,7 @@ export enum MaterialAsset {
   DirtCrackedPebbles,
 }
 
-enum TextureFiles {
+export enum TextureFiles {
   Grass1Diffuse = "grass-1/Grass_Texture_01.png",
   Grass1Normal = "grass-1/Ground_Normals_01.png",
   GrassFlowersDiffuse = "grass-flowers/Grass_Flowers_Texture_01.png",
@@ -21,7 +21,7 @@ enum TextureFiles {
 export class AssetManager {
   materials = new Map<MaterialAsset, THREE.MeshStandardMaterial>();
 
-  private textures = new Map<TextureFiles, THREE.Texture>();
+  textures = new Map<TextureFiles, THREE.Texture>();
 
   private loadingManager = new THREE.LoadingManager();
   private textureLoader = new THREE.TextureLoader(this.loadingManager);
@@ -56,32 +56,32 @@ export class AssetManager {
     this.createMaterial(
       MaterialAsset.Grass1,
       TextureFiles.Grass1Diffuse,
-      TextureFiles.Grass1Normal
+      TextureFiles.Grass1Normal,
     );
 
     this.createMaterial(
       MaterialAsset.GrassFlowers,
       TextureFiles.GrassFlowersDiffuse,
-      TextureFiles.GrassFlowersNormal
+      TextureFiles.GrassFlowersNormal,
     );
 
     this.createMaterial(
       MaterialAsset.GrassLeaves,
       TextureFiles.GrassLeavesDiffuse,
-      TextureFiles.GrassLeavesNormal
+      TextureFiles.GrassLeavesNormal,
     );
 
     this.createMaterial(
       MaterialAsset.DirtCrackedPebbles,
       TextureFiles.DirtCrackedPebblesDiffuse,
-      TextureFiles.DirtCrackedPebblesNormal
+      TextureFiles.DirtCrackedPebblesNormal,
     );
   }
 
   private createMaterial(
     materialAsset: MaterialAsset,
     diffuse: TextureFiles,
-    normal: TextureFiles
+    normal: TextureFiles,
   ) {
     const diffuseMap = this.textures.get(diffuse)!;
     const normalMap = this.textures.get(normal)!;
