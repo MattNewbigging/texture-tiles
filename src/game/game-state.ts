@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { RenderPipeline } from "./render-pipeline";
 import { AssetManager, MaterialAsset, TextureFiles } from "./asset-manager";
-import { GrassTile } from "./grass-tile";
+import { GrassTile } from "./grass-tile/grass-tile";
+import { PathTile } from "./path-tile/path-tile";
 
 export class GameState {
   private renderPipeline: RenderPipeline;
@@ -37,11 +38,13 @@ export class GameState {
     const gridSize = 4;
     for (let x = 0; x < gridSize; x++) {
       for (let z = 0; z < gridSize; z++) {
-        const tile = new GrassTile(textureA, textureB);
+        const tile = new GrassTile(assetManager);
         tile.position.set(x, 0, z);
         this.scene.add(tile);
       }
     }
+
+    // this.scene.add(new THREE.AxesHelper(20));
 
     window.addEventListener("mousedown", this.onMouseClick);
 
@@ -78,6 +81,8 @@ export class GameState {
   }
 
   private onMouseClick = (event: MouseEvent) => {
+    if (event.button !== 0) return;
+
     this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -85,10 +90,12 @@ export class GameState {
     const intersections = this.raycaster.intersectObject(this.scene, true);
     if (intersections.length) {
       const tile = intersections[0].object;
-      const pathMaterial = this.assetManager.materials.get(
-        MaterialAsset.DirtCrackedPebbles,
-      )!;
-      //(tile as THREE.Mesh).material = pathMaterial;
+
+      const path = new PathTile(this.assetManager);
+      path.position.copy(tile.position);
+
+      this.scene.remove(tile);
+      this.scene.add(path);
     }
   };
 
