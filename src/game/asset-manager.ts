@@ -51,7 +51,7 @@ export class AssetManager {
     // Ensure we always return an object 3d
     return new THREE.Mesh(
       new THREE.SphereGeometry(),
-      new THREE.MeshBasicMaterial({ color: "red" })
+      new THREE.MeshBasicMaterial({ color: "red" }),
     );
   }
 
@@ -82,24 +82,24 @@ export class AssetManager {
   private loadTextures() {
     this.loadTexture(
       TextureAsset.BANDIT,
-      (texture) => (texture.colorSpace = THREE.SRGBColorSpace)
+      (texture) => (texture.colorSpace = THREE.SRGBColorSpace),
     );
 
     this.loadTexture(
       TextureAsset.HDR,
-      (texture) => (texture.mapping = THREE.EquirectangularReflectionMapping)
+      (texture) => (texture.mapping = THREE.EquirectangularReflectionMapping),
     );
   }
 
   private loadAnimations() {
     Object.values(AnimationAsset).forEach((filename) =>
-      this.loadAnimation(filename)
+      this.loadAnimation(filename),
     );
   }
 
   private loadModel(
     filename: ModelAsset,
-    onLoad?: (group: THREE.Group) => void
+    onLoad?: (group: THREE.Group) => void,
   ) {
     const path = `${getPathPrefix()}/models/${filename}`;
     const url = getUrl(path);
@@ -125,7 +125,7 @@ export class AssetManager {
 
   private loadTexture(
     filename: TextureAsset,
-    onLoad?: (texture: THREE.Texture) => void
+    onLoad?: (texture: THREE.Texture) => void,
   ) {
     const path = `${getPathPrefix()}/textures/${filename}`;
     const url = getUrl(path);
@@ -156,7 +156,7 @@ export class AssetManager {
 function getPathPrefix() {
   // Using template strings to create url paths breaks on github pages
   // We need to manually add the required /repo/ prefix to the path if not on localhost
-  return location.hostname === "localhost" ? "" : "/repo-name-here";
+  return location.hostname === "localhost" ? "" : "/texture-tiles";
 }
 
 function getUrl(path: string) {
