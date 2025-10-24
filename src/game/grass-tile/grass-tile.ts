@@ -2,9 +2,13 @@ import * as THREE from "three";
 import tileVS from "./shaders/tile.vs";
 import tileFS from "./shaders/tile.fs";
 import { AssetManager, TextureFiles } from "../asset-manager";
+import { Tile } from "../tile/tile";
 
-export class GrassTile extends THREE.Mesh {
-  constructor(assetManager: AssetManager) {
+export class GrassTile extends Tile {
+  readonly tileX: number;
+  readonly tileY: number;
+
+  constructor(x: number, y: number, assetManager: AssetManager) {
     const textureA = assetManager.textures.get(TextureFiles.Grass1Diffuse)!;
     const textureB = assetManager.textures.get(
       TextureFiles.GrassLeavesDiffuse,
@@ -14,6 +18,9 @@ export class GrassTile extends THREE.Mesh {
     const material = new GrassTileMaterial(textureA, textureB);
 
     super(geometry, material);
+
+    this.tileX = x;
+    this.tileY = y;
   }
 }
 

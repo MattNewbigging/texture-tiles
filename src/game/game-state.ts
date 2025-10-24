@@ -4,6 +4,7 @@ import { RenderPipeline } from "./render-pipeline";
 import { AssetManager, MaterialAsset, TextureFiles } from "./asset-manager";
 import { GrassTile } from "./grass-tile/grass-tile";
 import { PathTile } from "./path-tile/path-tile";
+import { Tile } from "./tile/tile";
 
 export class GameState {
   private renderPipeline: RenderPipeline;
@@ -15,6 +16,8 @@ export class GameState {
 
   private pointer = new THREE.Vector2();
   private raycaster = new THREE.Raycaster();
+
+  private tiles: Tile[][] = [];
 
   constructor(private assetManager: AssetManager) {
     // Scene setup
@@ -35,16 +38,19 @@ export class GameState {
     const textureB = this.assetManager.textures.get(
       TextureFiles.GrassLeavesDiffuse,
     )!;
-    const gridSize = 4;
+    const gridSize = 10;
     for (let x = 0; x < gridSize; x++) {
+      const row: Tile[] = [];
+
       for (let z = 0; z < gridSize; z++) {
-        const tile = new GrassTile(assetManager);
+        const tile = new GrassTile(x, z, assetManager);
         tile.position.set(x, 0, z);
         this.scene.add(tile);
+        row.push(tile);
       }
-    }
 
-    // this.scene.add(new THREE.AxesHelper(20));
+      this.tiles.push(row);
+    }
 
     window.addEventListener("mousedown", this.onMouseClick);
 
@@ -90,14 +96,55 @@ export class GameState {
     const intersections = this.raycaster.intersectObject(this.scene, true);
     if (intersections.length) {
       const tile = intersections[0].object;
+      if (!(tile instanceof Tile)) return;
 
-      const path = new PathTile(this.assetManager);
+      const path = new PathTile(tile.tileX, tile.tileY, this.assetManager);
       path.position.copy(tile.position);
 
       this.scene.remove(tile);
       this.scene.add(path);
+
+      this.tiles[tile.tileY][tile.tileX] = path;
+      console.log(this.tiles);
+
+      this.updatePathConnections(path);
     }
   };
+
+  private updatePathConnections(pathTile: PathTile) {
+    // Find neighbours of this new path tile
+    const row = pathTile.tileX;
+    const col = pathTile.tileY;
+
+    const upTile = col - 1 >= 0 ? this.tiles[col - 1][row] : undefined;
+    if (upTile instanceof PathTile) {
+      upTile.connectDown();
+      pathTile.connectUp();
+    }
+
+    const downTile =
+      col + 1 < this.tiles.length ? this.tiles[col + 1][row] : undefined;
+    if (downTile instanceof PathTile) {
+      downTile.connectUp();
+      pathTile.connectDown();
+    }
+
+    const leftTile = row - 1 >= 0 ? this.tiles[col][row - 1] : undefined;
+    if (leftTile instanceof PathTile) {
+      leftTile.connectRight();
+      pathTile.connectLeft();
+    }
+
+    const rightTile =
+      row + 1 < this.tiles[0].length ? this.tiles[col][row + 1] : undefined;
+    if (rightTile instanceof PathTile) {
+      rightTile.connectLeft();
+      pathTile.connectRight();
+    }
+
+    // Calling functions in isolation as above result in diagonal grass stretches
+    // Need to check diagonals after cardinals, call similar connectUpRight
+  }
 
   private update = () => {
     requestAnimationFrame(this.update);
