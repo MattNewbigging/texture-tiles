@@ -1,8 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { RenderPipeline } from "./render-pipeline";
-import { AssetManager, ModelAsset } from "./asset-manager";
-import { AnimatedObject } from "./animated-object";
+import { AssetManager, MaterialAsset } from "./asset-manager";
 
 export class GameState {
   private renderPipeline: RenderPipeline;
@@ -12,15 +11,11 @@ export class GameState {
   private camera = new THREE.PerspectiveCamera();
   private controls: OrbitControls;
 
-  private animatedObject: AnimatedObject;
-
   constructor(private assetManager: AssetManager) {
+    // Scene setup
     this.setupCamera();
-
     this.renderPipeline = new RenderPipeline(this.scene, this.camera);
-
     this.setupLights();
-    this.setupObjects();
 
     this.controls = new OrbitControls(this.camera, this.renderPipeline.canvas);
     this.controls.enableDamping = true;
@@ -28,10 +23,15 @@ export class GameState {
 
     this.scene.background = new THREE.Color("#1680AF");
 
-    this.animatedObject = new AnimatedObject(assetManager);
-    this.animatedObject.position.z = -0.5;
-    this.animatedObject.playAnimation("idle");
-    this.scene.add(this.animatedObject);
+    // Object setup
+    const gridSize = 4;
+    for (let x = 0; x < gridSize; x++) {
+      for (let z = 0; z < gridSize; z++) {
+        const tile = this.createTile(MaterialAsset.GrassFlowers);
+        tile.position.set(x, 0, z);
+        this.scene.add(tile);
+      }
+    }
 
     // Start game
     this.update();
@@ -52,9 +52,17 @@ export class GameState {
     this.scene.add(directLight);
   }
 
-  private setupObjects() {
-    const box = this.assetManager.getModel(ModelAsset.BOX_SMALL);
-    this.scene.add(box);
+  private createTile(materialAsset: MaterialAsset) {
+    const tile = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1, 32, 32),
+      new THREE.MeshStandardMaterial()
+    );
+    tile.rotateX(-Math.PI / 2);
+
+    const material = this.assetManager.materials.get(materialAsset)!;
+    tile.material = material;
+
+    return tile;
   }
 
   private update = () => {
@@ -63,8 +71,6 @@ export class GameState {
     const dt = this.clock.getDelta();
 
     this.controls.update();
-
-    this.animatedObject.update(dt);
 
     this.renderPipeline.render(dt);
   };

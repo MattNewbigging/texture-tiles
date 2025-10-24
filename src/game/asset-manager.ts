@@ -1,155 +1,97 @@
 import * as THREE from "three";
-import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
-import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
-export enum AnimationAsset {
-  BANDIT_IDLE = "idle.fbx",
+export enum MaterialAsset {
+  Grass1,
+  GrassFlowers,
+  GrassLeaves,
+  DirtCrackedPebbles,
 }
 
-export enum ModelAsset {
-  BANDIT = "bandit.fbx",
-  BOX_SMALL = "box-small.glb",
-}
-
-export enum TextureAsset {
-  BANDIT = "bandit-texture.png",
-  HDR = "orchard_cartoony.hdr",
+enum TextureFiles {
+  Grass1Diffuse = "grass-1/Grass_Texture_01.png",
+  Grass1Normal = "grass-1/Ground_Normals_01.png",
+  GrassFlowersDiffuse = "grass-flowers/Grass_Flowers_Texture_01.png",
+  GrassFlowersNormal = "grass-flowers/Ground_Flowers_Normals_01.png",
+  GrassLeavesDiffuse = "grass-leaves/Grass_Leaves_Texture_01.png",
+  GrassLeavesNormal = "grass-leaves/Ground_Leaves_Normals_01.png",
+  DirtCrackedPebblesDiffuse = "dirt-cracked-pebbles/Dirt_Cracked_Pebbles_Texture_01.png",
+  DirtCrackedPebblesNormal = "dirt-cracked-pebbles/Dirt_Cracked_Pebbles_Normals_01.png",
 }
 
 export class AssetManager {
-  private models = new Map<ModelAsset, THREE.Group>();
-  textures = new Map<TextureAsset, THREE.Texture>();
-  animations = new Map<AnimationAsset, THREE.AnimationClip>();
+  materials = new Map<MaterialAsset, THREE.MeshStandardMaterial>();
+
+  private textures = new Map<TextureFiles, THREE.Texture>();
 
   private loadingManager = new THREE.LoadingManager();
-  private fbxLoader = new FBXLoader(this.loadingManager);
-  private gltfLoader = new GLTFLoader(this.loadingManager);
-  private rgbeLoader = new RGBELoader(this.loadingManager);
   private textureLoader = new THREE.TextureLoader(this.loadingManager);
 
-  applyModelTexture(model: THREE.Object3D, textureName: TextureAsset) {
-    const texture = this.textures.get(textureName);
-    if (!texture) {
-      return;
-    }
-
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material.map = texture;
-      }
-    });
-  }
-
-  getModel(name: ModelAsset): THREE.Object3D {
-    const model = this.models.get(name);
-    if (model) {
-      return SkeletonUtils.clone(model);
-    }
-
-    // Ensure we always return an object 3d
-    return new THREE.Mesh(
-      new THREE.SphereGeometry(),
-      new THREE.MeshBasicMaterial({ color: "red" }),
-    );
-  }
-
   load(): Promise<void> {
-    this.loadModels();
     this.loadTextures();
-    this.loadAnimations();
 
     return new Promise((resolve) => {
       this.loadingManager.onLoad = () => {
+        // Create the materials that need multiple loaded files
+        this.createMaterials();
+
         resolve();
       };
     });
   }
 
-  private loadModels() {
-    this.loadModel(ModelAsset.BANDIT);
-
-    this.loadModel(ModelAsset.BOX_SMALL, (group: THREE.Group) => {
-      group.traverse((child: THREE.Object3D) => {
-        if (child instanceof THREE.Mesh) {
-          child.material.metalness = 0; // kenney assets require this to render correctly
-        }
-      });
-    });
-  }
-
   private loadTextures() {
-    this.loadTexture(
-      TextureAsset.BANDIT,
-      (texture) => (texture.colorSpace = THREE.SRGBColorSpace),
-    );
-
-    this.loadTexture(
-      TextureAsset.HDR,
-      (texture) => (texture.mapping = THREE.EquirectangularReflectionMapping),
-    );
+    Object.values(TextureFiles).forEach((tf) => this.loadTexture(tf));
   }
 
-  private loadAnimations() {
-    Object.values(AnimationAsset).forEach((filename) =>
-      this.loadAnimation(filename),
-    );
-  }
-
-  private loadModel(
-    filename: ModelAsset,
-    onLoad?: (group: THREE.Group) => void,
-  ) {
-    const path = `${getPathPrefix()}/models/${filename}`;
-    const url = getUrl(path);
-
-    const filetype = filename.split(".")[1];
-
-    // FBX
-    if (filetype === "fbx") {
-      this.fbxLoader.load(url, (group: THREE.Group) => {
-        onLoad?.(group);
-        this.models.set(filename, group);
-      });
-
-      return;
-    }
-
-    // GLTF
-    this.gltfLoader.load(url, (gltf: GLTF) => {
-      onLoad?.(gltf.scene);
-      this.models.set(filename, gltf.scene);
-    });
-  }
-
-  private loadTexture(
-    filename: TextureAsset,
-    onLoad?: (texture: THREE.Texture) => void,
-  ) {
+  private loadTexture(filename: TextureFiles) {
     const path = `${getPathPrefix()}/textures/${filename}`;
     const url = getUrl(path);
 
-    const filetype = filename.split(".")[1];
-    const loader = filetype === "png" ? this.textureLoader : this.rgbeLoader;
-
-    loader.load(url, (texture) => {
-      onLoad?.(texture);
+    this.textureLoader.load(url, (texture: THREE.Texture) => {
       this.textures.set(filename, texture);
     });
   }
 
-  private loadAnimation(filename: AnimationAsset) {
-    const path = `${getPathPrefix()}/anims/${filename}`;
-    const url = getUrl(path);
+  private createMaterials() {
+    this.createMaterial(
+      MaterialAsset.Grass1,
+      TextureFiles.Grass1Diffuse,
+      TextureFiles.Grass1Normal
+    );
 
-    this.fbxLoader.load(url, (group) => {
-      if (group.animations.length) {
-        const clip = group.animations[0];
-        clip.name = filename;
-        this.animations.set(filename, clip);
-      }
+    this.createMaterial(
+      MaterialAsset.GrassFlowers,
+      TextureFiles.GrassFlowersDiffuse,
+      TextureFiles.GrassFlowersNormal
+    );
+
+    this.createMaterial(
+      MaterialAsset.GrassLeaves,
+      TextureFiles.GrassLeavesDiffuse,
+      TextureFiles.GrassLeavesNormal
+    );
+
+    this.createMaterial(
+      MaterialAsset.DirtCrackedPebbles,
+      TextureFiles.DirtCrackedPebblesDiffuse,
+      TextureFiles.DirtCrackedPebblesNormal
+    );
+  }
+
+  private createMaterial(
+    materialAsset: MaterialAsset,
+    diffuse: TextureFiles,
+    normal: TextureFiles
+  ) {
+    const diffuseMap = this.textures.get(diffuse)!;
+    const normalMap = this.textures.get(normal)!;
+
+    const material = new THREE.MeshStandardMaterial({
+      map: diffuseMap,
+      normalMap: normalMap,
     });
+
+    this.materials.set(materialAsset, material);
   }
 }
 
